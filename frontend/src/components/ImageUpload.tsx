@@ -1,5 +1,5 @@
 import { useCallback, useState } from "react";
-import { useDropzone } from "react-dropzone";
+import { useDropzone, type FileRejection } from "react-dropzone";
 import { Upload, FileImage, AlertCircle } from "lucide-react";
 
 interface Props {
@@ -22,7 +22,7 @@ export default function ImageUpload({ onUpload, isLoading }: Props) {
   const [preview, setPreview] = useState<string | null>(null);
 
   const onDrop = useCallback(
-    (accepted: File[], rejected: { errors: { message: string }[] }[]) => {
+    (accepted: File[], rejected: FileRejection[]) => {
       setError(null);
       if (rejected.length > 0) {
         const msg = rejected[0]?.errors[0]?.message ?? "Invalid file";
