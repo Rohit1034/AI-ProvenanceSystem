@@ -1,0 +1,53 @@
+# Web framework
+fastapi==0.115.12
+uvicorn[standard]==0.34.2
+python-multipart==0.0.20
+pydantic==2.11.3
+pydantic-settings==2.9.1
+
+# Database
+sqlalchemy[asyncio]==2.0.41
+asyncpg==0.30.0
+alembic==1.15.2
+
+# Image processing
+Pillow==11.2.1
+pillow-heif==0.22.0
+
+# Metadata extraction
+exifread==3.1.0
+python-xmp-toolkit==2.0.2
+iptcinfo3==2.1.4
+
+# Hashing
+imagehash==4.3.2
+
+# File type detection
+python-magic-bin==0.4.14
+filetype==1.2.0
+
+# C2PA (content credentials)
+c2pa-python==0.6.2
+
+# Security
+defusedxml==0.7.1
+
+# Task queue (future)
+# celery==5.4.0
+# redis==5.2.1
+
+# Logging and monitoring
+structlog==25.1.0
+
+# HTTP client
+httpx==0.28.1
+
+# Testing
+pytest==8.3.5
+pytest-asyncio==0.25.3
+pytest-cov==6.1.1
+httpx==0.28.1
+
+# Code quality
+ruff==0.11.12
+mypy==1.15.0
