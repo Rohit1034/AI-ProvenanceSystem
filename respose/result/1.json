@@ -1,0 +1,82 @@
+{
+  "analysis_id": "ff06b45b-e7e8-4c22-931e-c1f35aaa2730",
+  "classification": "inconclusive",
+  "overall_confidence": 0.3,
+  "image_info": {
+    "sha256": "f9f9a46748eb8c54069eabcb066012b440717d9ab8d0746ada23cfd057378320",
+    "file_size": 2112554,
+    "mime_type": "image/png",
+    "format": "PNG",
+    "width": 1536,
+    "height": 1024,
+    "bit_depth": 24,
+    "color_mode": "RGB",
+    "color_profile": null,
+    "compression_info": {},
+    "perceptual_hashes": [
+      {
+        "hash_algorithm": "average_hash",
+        "hash_value": "e0383c3e0a000000"
+      },
+      {
+        "hash_algorithm": "phash",
+        "hash_value": "ddcc60707176c6c9"
+      },
+      {
+        "hash_algorithm": "dhash",
+        "hash_value": "86726270522a3632"
+      },
+      {
+        "hash_algorithm": "whash",
+        "hash_value": "f2babebeaa960210"
+      }
+    ]
+  },
+  "provenance": {
+    "c2pa": {
+      "present": false,
+      "valid": null,
+      "trusted": null,
+      "signer": null,
+      "claim_generator": null,
+      "actions": [],
+      "ingredients": [],
+      "validation_errors": [],
+      "trust_signals": []
+    },
+    "metadata": {
+      "exif": [
+        {
+          "type": "no_exif",
+          "category": "exif",
+          "description": "No EXIF data found"
+        }
+      ]
+    },
+    "watermarks": []
+  },
+  "forensics": {
+    "compression": {},
+    "noise": {},
+    "resampling": {},
+    "copy_move": {},
+    "statistics": {}
+  },
+  "ml": {
+    "ai_generated": null,
+    "ai_edited": null,
+    "conventional_edit": null,
+    "provider_prediction": null,
+    "provider_confidence": null,
+    "model_name": null,
+    "model_version": null,
+    "status": "not_implemented"
+  },
+  "regions": [],
+  "evidence_chain": [],
+  "limitations": [
+    "ML-based AI detection is not yet implemented. Classification is based on metadata and provenance signals only.",
+    "No cryptographically verified provenance (C2PA) was found. Classification is based on heuristic evidence.",
+    "No AI watermark detection was performed. Watermark analyzers are not yet implemented."
+  ]
+}

@@ -47,7 +47,7 @@ class FormatAnalyzer(BaseAnalyzer):
         fmt = img_info.get("format", "").upper()
         format_details: dict = {}
 
-        if fmt == "JPEG":
+        if fmt in ("JPEG", "MPO"):
             format_details = await asyncio.to_thread(
                 self._analyze_jpeg, image_path
             )
@@ -122,6 +122,7 @@ class FormatAnalyzer(BaseAnalyzer):
         result: dict = {"format_type": "jpeg", "segments": [], "compression": {}}
         quantization_tables: list[dict] = []
         dqt_count = 0
+        soi_count = 0
         has_jfif = False
         has_exif = False
 
@@ -144,6 +145,7 @@ class FormatAnalyzer(BaseAnalyzer):
                 segment_info = {"marker": marker_name, "offset": i}
 
                 if marker == 0xD8:
+                    soi_count += 1
                     result["segments"].append(segment_info)
                     i += 2
                     continue
@@ -188,10 +190,14 @@ class FormatAnalyzer(BaseAnalyzer):
                 "has_jfif": has_jfif,
                 "has_exif": has_exif,
                 "dqt_count": dqt_count,
+                "soi_count": soi_count,
                 "quantization_tables": quantization_tables,
             }
 
-            if dqt_count > 1:
+            is_double = self._detect_double_compression(
+                soi_count, quantization_tables, has_jfif, has_exif
+            )
+            if is_double:
                 result["double_compression_indicator"] = True
 
         except Exception as e:
@@ -199,6 +205,28 @@ class FormatAnalyzer(BaseAnalyzer):
             result["error"] = str(e)
 
         return result
+
+    def _detect_double_compression(
+        self,
+        soi_count: int,
+        quantization_tables: list[dict],
+        has_jfif: bool,
+        has_exif: bool,
+    ) -> bool:
+        # Multiple SOI (Start of Image) markers indicate embedded/concatenated JPEG streams
+        if soi_count > 1:
+            return True
+
+        # Conflicting/all-flat unity quantization tables (non-standard compression artifact)
+        if has_jfif and has_exif and len(quantization_tables) >= 2:
+            all_ones = all(
+                t.get("values_summary", {}).get("max", 0) == 1
+                for t in quantization_tables
+            )
+            if all_ones:
+                return True
+
+        return False
 
     def _parse_quantization_table(self, data: bytes) -> list[dict]:
         tables = []

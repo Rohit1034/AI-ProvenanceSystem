@@ -14,76 +14,92 @@ class C2PAAnalyzer(BaseAnalyzer):
     version = "0.1.0"
 
     async def analyze(self, image_path: str, analysis_id: UUID) -> AnalyzerResult:
-        try:
-            import c2pa
-        except ImportError:
+        manifest_data = await asyncio.to_thread(self._read_c2pa_multi, image_path)
+
+        if manifest_data is None:
             return self._make_result(
-                status="not_implemented",
+                status="completed",
+                confidence=1.0,
+                findings=[{
+                    "type": "c2pa_absent",
+                    "description": "No C2PA manifest found in this image",
+                }],
                 limitations=[
-                    "c2pa-python library is not installed. "
-                    "Install with: pip install c2pa-python"
+                    "Absence of C2PA does not prove the image is unmodified or human-created (most social networks strip C2PA metadata)"
                 ],
             )
 
-        try:
-            reader = await asyncio.to_thread(self._read_c2pa, image_path, c2pa)
-            if reader is None:
-                return self._make_result(
-                    status="completed",
-                    confidence=1.0,
-                    findings=[{
-                        "type": "c2pa_absent",
-                        "description": "No C2PA manifest found in this image",
-                    }],
-                    limitations=[
-                        "Absence of C2PA does not prove the image is unmodified or human-created"
-                    ],
-                )
-
-            return self._process_manifest(reader)
-
-        except Exception as e:
-            logger.warning("C2PA analysis error: %s", e)
+        if isinstance(manifest_data, dict) and "error" in manifest_data:
             return self._make_result(
                 status="completed",
                 confidence=0.5,
                 findings=[{
                     "type": "c2pa_error",
-                    "description": f"Error reading C2PA data: {e}",
+                    "description": f"C2PA parsing error: {manifest_data['error']}",
                 }],
                 limitations=["C2PA parsing encountered an error"],
             )
 
-    def _read_c2pa(self, path: str, c2pa_module):
-        try:
-            reader = c2pa_module.Reader.from_file(path)
-            return reader
-        except Exception as e:
-            err_str = str(e).lower()
-            if "not found" in err_str or "no manifest" in err_str or "jumbf" in err_str:
-                return None
-            raise
+        return self._process_manifest(manifest_data)
 
-    def _process_manifest(self, reader) -> AnalyzerResult:
+    def _read_c2pa_multi(self, path: str) -> dict | None:
+        # Method 1: c2pa-python SDK (c2pa.read_file or c2pa.Reader)
+        try:
+            import c2pa
+            import json
+
+            # Try c2pa.read_file
+            if hasattr(c2pa, "read_file"):
+                try:
+                    res = c2pa.read_file(path)
+                    if res:
+                        return json.loads(res) if isinstance(res, str) else res
+                except Exception as e:
+                    err_str = str(e).lower()
+                    if not any(kw in err_str for kw in ("not found", "no manifest", "jumbf", "empty")):
+                        logger.debug("c2pa.read_file non-fatal: %s", e)
+
+            # Try c2pa.Reader.from_file or c2pa.Reader
+            if hasattr(c2pa, "Reader"):
+                try:
+                    if hasattr(c2pa.Reader, "from_file"):
+                        reader = c2pa.Reader.from_file(path)
+                    else:
+                        reader = c2pa.Reader(path)
+                    if reader:
+                        res = reader.json() if hasattr(reader, "json") else str(reader)
+                        return json.loads(res) if isinstance(res, str) else res
+                except Exception as e:
+                    err_str = str(e).lower()
+                    if not any(kw in err_str for kw in ("not found", "no manifest", "jumbf", "empty")):
+                        logger.debug("c2pa.Reader non-fatal: %s", e)
+        except ImportError:
+            logger.debug("c2pa-python library not available in runtime")
+        except Exception as e:
+            logger.debug("c2pa python extraction error: %s", e)
+
+        # Method 2: Official c2patool CLI (if installed in container or host system)
+        try:
+            import shutil
+            import subprocess
+            import json
+
+            if shutil.which("c2patool"):
+                proc = subprocess.run(
+                    ["c2patool", path, "--detailed"],
+                    capture_output=True,
+                    text=True,
+                    timeout=5,
+                )
+                if proc.returncode == 0 and proc.stdout.strip():
+                    return json.loads(proc.stdout)
+        except Exception as e:
+            logger.debug("c2patool CLI error: %s", e)
+
+        return None
+
+    def _process_manifest(self, manifest_data: dict) -> AnalyzerResult:
         findings: list[dict] = []
-
-        try:
-            manifest_json = reader.json()
-            if isinstance(manifest_json, str):
-                import json
-                manifest_data = json.loads(manifest_json)
-            else:
-                manifest_data = manifest_json
-        except Exception as e:
-            return self._make_result(
-                status="completed",
-                confidence=0.5,
-                findings=[{
-                    "type": "c2pa_parse_error",
-                    "description": f"Could not parse C2PA manifest JSON: {e}",
-                }],
-            )
-
         active_manifest = None
         manifests = manifest_data.get("manifests", {})
         active_label = manifest_data.get("active_manifest", "")
@@ -108,9 +124,19 @@ class C2PAAnalyzer(BaseAnalyzer):
 
         signer = None
         claim_generator = active_manifest.get("claim_generator", "")
+        if not claim_generator:
+            gen_info = active_manifest.get("claim_generator_info", [])
+            if gen_info and isinstance(gen_info, list) and len(gen_info) > 0:
+                claim_generator = gen_info[0].get("name", "")
+
         signature_info = active_manifest.get("signature_info", {})
         if signature_info:
-            signer = signature_info.get("issuer", "")
+            signer = (
+                signature_info.get("issuer")
+                or signature_info.get("common_name")
+                or signature_info.get("organization")
+                or signature_info.get("cert_serial_number")
+            )
 
         actions = []
         assertions = active_manifest.get("assertions", [])
@@ -118,19 +144,21 @@ class C2PAAnalyzer(BaseAnalyzer):
             label = assertion.get("label", "")
             data = assertion.get("data", {})
 
-            if label == "c2pa.actions":
+            if label.startswith("c2pa.actions"):
                 action_list = data.get("actions", [])
                 for a in action_list:
                     actions.append({
                         "action": a.get("action", ""),
                         "softwareAgent": a.get("softwareAgent", ""),
+                        "digitalSourceType": a.get("digitalSourceType", ""),
                         "parameters": a.get("parameters", {}),
+                        "description": a.get("description", ""),
                     })
 
         ingredients = []
         for assertion in assertions:
             label = assertion.get("label", "")
-            if label == "c2pa.ingredient":
+            if label.startswith("c2pa.ingredient"):
                 data = assertion.get("data", {})
                 ingredients.append({
                     "title": data.get("title", ""),

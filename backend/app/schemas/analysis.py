@@ -114,6 +114,7 @@ class ProvenanceSection(BaseModel):
 
 class ForensicsSection(BaseModel):
     compression: dict[str, Any] = Field(default_factory=dict)
+    ela: dict[str, Any] = Field(default_factory=dict)
     noise: dict[str, Any] = Field(default_factory=dict)
     resampling: dict[str, Any] = Field(default_factory=dict)
     copy_move: dict[str, Any] = Field(default_factory=dict)

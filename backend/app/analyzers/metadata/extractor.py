@@ -19,6 +19,16 @@ AI_SOFTWARE_PATTERNS = [
     (r"flux", "FLUX"),
     (r"ideogram", "Ideogram"),
     (r"runway", "Runway"),
+    (r"eleven[\s\-]?labs", "ElevenLabs"),
+    (r"pika", "Pika"),
+    (r"kling", "Kling AI"),
+    (r"luma", "Luma Dream Machine"),
+    (r"leonardo", "Leonardo.Ai"),
+    (r"civitai", "Civitai"),
+    (r"recraft", "Recraft"),
+    (r"comfyui", "ComfyUI (Stable Diffusion)"),
+    (r"automatic1111", "Automatic1111 (Stable Diffusion)"),
+    (r"fooocus", "Fooocus"),
     (r"synthid", "Google SynthID"),
 ]
 
@@ -52,7 +62,8 @@ class MetadataExtractor(BaseAnalyzer):
         limitations: list[str] = []
         raw: dict = {}
 
-        exif_data = await self._extract_exif(image_path)
+        # 1. Multi-source EXIF extraction (Pillow IFDs + piexif + exifread + exiftool)
+        exif_data = await self._extract_exif_multi(image_path)
         if exif_data:
             raw["exif"] = exif_data
             findings.extend(self._process_exif(exif_data))
@@ -63,19 +74,23 @@ class MetadataExtractor(BaseAnalyzer):
                 "description": "No EXIF data found",
             })
 
+        # 2. XMP Packet extraction
         xmp_data = await self._extract_xmp(image_path)
         if xmp_data:
             raw["xmp"] = xmp_data
             findings.extend(self._process_xmp(xmp_data))
 
+        # 3. Image Container / PIL info & text chunk extraction (PNG prompts, WebP, etc.)
         pil_info = await self._extract_pil_info(image_path)
         if pil_info:
             raw["pil_info"] = pil_info
             findings.extend(self._process_pil_info(pil_info))
 
+        # 4. Software signatures (AI models & editing apps)
         software_findings = self._detect_software(raw)
         findings.extend(software_findings)
 
+        # 5. Cross-field inconsistency checks
         inconsistencies = self._detect_inconsistencies(findings)
         findings.extend(inconsistencies)
 
@@ -93,28 +108,107 @@ class MetadataExtractor(BaseAnalyzer):
             raw_output=raw,
         )
 
-    async def _extract_exif(self, path: str) -> dict | None:
-        try:
-            import exifread
+    async def _extract_exif_multi(self, path: str) -> dict | None:
+        def _read():
+            result: dict[str, Any] = {}
 
-            def _read():
+            # Engine 1: Pillow getexif() with sub-IFDs (Exif, GPS, Makernote) & _getexif()
+            try:
+                from PIL import Image, ExifTags
+                with Image.open(path) as img:
+                    # Top-level IFD
+                    exif = img.getexif()
+                    if exif:
+                        for tag_id, val in exif.items():
+                            tag_name = ExifTags.TAGS.get(tag_id, f"Tag_{tag_id}")
+                            result[f"Image {tag_name}"] = str(val)[:500]
+
+                        # Sub-IFDs
+                        if hasattr(ExifTags, "IFD"):
+                            for ifd_name, ifd_id in (
+                                ("EXIF", ExifTags.IFD.Exif),
+                                ("GPS", ExifTags.IFD.GPSInfo),
+                                ("MakerNote", ExifTags.IFD.MakerNote),
+                                ("Interop", ExifTags.IFD.Interop),
+                            ):
+                                try:
+                                    sub_ifd = exif.get_ifd(ifd_id)
+                                    if sub_ifd:
+                                        tag_dict = (
+                                            ExifTags.GPSTAGS if ifd_name == "GPS" else ExifTags.TAGS
+                                        )
+                                        for k, v in sub_ifd.items():
+                                            name = tag_dict.get(k, f"{ifd_name}_{k}")
+                                            result[f"{ifd_name} {name}"] = str(v)[:500]
+                                except Exception:
+                                    pass
+
+                    # Pillow legacy _getexif() fallback
+                    if hasattr(img, "_getexif"):
+                        raw_exif = img._getexif()
+                        if raw_exif:
+                            for k, v in raw_exif.items():
+                                name = ExifTags.TAGS.get(k, f"Tag_{k}")
+                                if f"EXIF {name}" not in result and f"Image {name}" not in result:
+                                    result[f"EXIF {name}"] = str(v)[:500]
+            except Exception as e:
+                logger.debug("Pillow EXIF extraction error: %s", e)
+
+            # Engine 2: piexif fallback
+            try:
+                import piexif
+                exif_dict = piexif.load(path)
+                for ifd in ("0th", "Exif", "GPS", "1st"):
+                    if ifd in exif_dict and isinstance(exif_dict[ifd], dict):
+                        for tag_id, val in exif_dict[ifd].items():
+                            tag_str = str(val)
+                            if isinstance(val, bytes):
+                                try:
+                                    tag_str = val.decode("utf-8", errors="ignore")
+                                except Exception:
+                                    tag_str = str(val)
+                            key_name = f"piexif_{ifd}_{tag_id}"
+                            if key_name not in result:
+                                result[key_name] = tag_str[:500]
+            except Exception:
+                pass
+
+            # Engine 3: exifread fallback
+            try:
+                import exifread
                 with open(path, "rb") as f:
                     tags = exifread.process_file(f, details=False)
-                result = {}
                 for key, value in tags.items():
-                    str_val = str(value)
-                    if len(str_val) > 500:
-                        str_val = str_val[:500] + "..."
-                    result[key] = str_val
-                return result if result else None
+                    if key not in result:
+                        str_val = str(value)
+                        result[key] = str_val[:500] + ("..." if len(str_val) > 500 else "")
+            except Exception:
+                pass
 
-            return await asyncio.to_thread(_read)
-        except ImportError:
-            logger.warning("exifread not available")
-            return None
-        except Exception as e:
-            logger.warning("EXIF extraction failed: %s", e)
-            return None
+            # Engine 4: System exiftool CLI fallback (if installed on machine / container)
+            try:
+                import shutil
+                import subprocess
+                import json
+                if shutil.which("exiftool"):
+                    proc = subprocess.run(
+                        ["exiftool", "-j", "-all", path],
+                        capture_output=True,
+                        text=True,
+                        timeout=5,
+                    )
+                    if proc.returncode == 0 and proc.stdout.strip():
+                        parsed = json.loads(proc.stdout)
+                        if parsed and isinstance(parsed, list):
+                            for k, v in parsed[0].items():
+                                if k not in ("SourceFile", "Directory", "FilePermissions"):
+                                    result[f"exiftool_{k}"] = str(v)[:500]
+            except Exception as e:
+                logger.debug("exiftool CLI fallback error: %s", e)
+
+            return result if result else None
+
+        return await asyncio.to_thread(_read)
 
     async def _extract_xmp(self, path: str) -> dict | None:
         try:
@@ -174,25 +268,19 @@ class MetadataExtractor(BaseAnalyzer):
     async def _extract_pil_info(self, path: str) -> dict | None:
         try:
             from PIL import Image
-            from PIL.ExifTags import TAGS
 
             def _read():
                 result = {}
                 with Image.open(path) as img:
-                    exif_data = img.getexif()
-                    if exif_data:
-                        for tag_id, value in exif_data.items():
-                            tag_name = TAGS.get(tag_id, str(tag_id))
-                            str_val = str(value)
-                            if len(str_val) > 500:
-                                str_val = str_val[:500] + "..."
-                            result[tag_name] = str_val
+                    # PNG Text chunks / metadata (parameters, prompt, workflow, etc.)
+                    if hasattr(img, "text") and img.text:
+                        for k, v in img.text.items():
+                            result[f"png_text_{k}"] = str(v)[:2000]
 
-                    for key in ("software", "dpi", "jfif", "jfif_version",
-                                "jfif_density", "jfif_unit", "comment"):
-                        if key in img.info:
-                            val = img.info[key]
-                            result[f"info_{key}"] = str(val)[:500]
+                    # Pillow img.info dictionary
+                    for key, val in img.info.items():
+                        if key != "exif":  # already parsed
+                            result[f"info_{key}"] = str(val)[:2000]
 
                 return result if result else None
 

@@ -13,6 +13,8 @@ import {
   Eye,
   Fingerprint,
   Cpu,
+  BarChart3,
+  Droplets,
 } from "lucide-react";
 import type { AnalysisDetail } from "../types/analysis";
 
@@ -129,20 +131,210 @@ export default function ForensicReportView({ analysis, report }: Props) {
         )}
       </Section>
 
-      {/* ML Status */}
+      {/* Watermark Detection */}
+      <Section icon={Droplets} title="Watermark Detection">
+        {report.provenance.watermarks.length > 0 ? (
+          <div className="space-y-3">
+            {report.provenance.watermarks.map((w, i) => (
+              <div key={i} className="bg-slate-700/30 rounded-lg p-3">
+                <div className="flex items-center gap-2 mb-2">
+                  <span className={`inline-block w-2 h-2 rounded-full ${w.detected ? "bg-amber-400" : "bg-slate-500"}`} />
+                  <span className="text-sm font-medium text-slate-200">
+                    {w.provider} — {w.watermark_type}
+                  </span>
+                </div>
+                <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
+                  <StatusRow label="Detected" value={w.detected ? "Yes" : "No"} positive={w.detected} />
+                  <InfoCell label="Confidence" value={`${(w.confidence * 100).toFixed(1)}%`} />
+                  <InfoCell label="Detector" value={w.detector_version} mono />
+                </div>
+                {w.limitations.length > 0 && (
+                  <div className="mt-2">
+                    {w.limitations.map((lim, li) => (
+                      <p key={li} className="text-xs text-slate-500 mt-1">{lim}</p>
+                    ))}
+                  </div>
+                )}
+              </div>
+            ))}
+          </div>
+        ) : (
+          <p className="text-sm text-slate-500">
+            No AI watermarks detected (SynthID, DWT, LSB, DCT)
+          </p>
+        )}
+      </Section>
+
+      {/* ML AI Detection */}
       <Section icon={Cpu} title="AI Detection (ML)">
-        {report.ml.status === "not_implemented" ? (
+        {report.ml.status === "not_implemented" || report.ml.status === "error" ? (
           <p className="text-sm text-amber-400/70">
-            ML-based AI detection is not yet implemented.
-            Classification is based on metadata and provenance signals only.
+            {report.ml.status === "error"
+              ? "ML analysis encountered an error. Classification is based on metadata and provenance signals only."
+              : "ML-based AI detection is not yet implemented. Classification is based on metadata and provenance signals only."}
           </p>
         ) : (
-          <div className="grid grid-cols-3 gap-4">
-            <ConfidenceIndicator value={report.ml.ai_generated} label="AI Generated" />
-            <ConfidenceIndicator value={report.ml.ai_edited} label="AI Edited" />
-            <ConfidenceIndicator value={report.ml.conventional_edit} label="Conv. Edit" />
+          <div className="space-y-4">
+            <div className="grid grid-cols-3 gap-4">
+              <ConfidenceIndicator value={report.ml.ai_generated} label="AI Generated" />
+              <ConfidenceIndicator value={report.ml.ai_edited} label="AI Edited" />
+              <ConfidenceIndicator value={report.ml.conventional_edit} label="Conv. Edit" />
+            </div>
+            {report.ml.model_name && (
+              <div className="text-xs text-slate-500 mt-2">
+                Model: {report.ml.model_name} v{report.ml.model_version}
+              </div>
+            )}
           </div>
         )}
+      </Section>
+
+      {/* Forensics Analysis */}
+      <Section icon={BarChart3} title="Forensic Analysis">
+        <div className="space-y-4">
+          {/* ELA */}
+          {report.forensics.ela && Object.keys(report.forensics.ela).length > 0 && (
+            <div>
+              <h4 className="text-xs text-slate-500 uppercase tracking-wider mb-2">Error Level Analysis (ELA)</h4>
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                {(() => {
+                  const gs = (report.forensics.ela as Record<string, unknown>)?.global_stats as Record<string, number> | undefined;
+                  if (!gs) return null;
+                  return (
+                    <>
+                      <InfoCell label="Mean Error" value={gs.mean_error?.toFixed(2) ?? "N/A"} />
+                      <InfoCell label="Max Error" value={gs.max_error?.toFixed(2) ?? "N/A"} />
+                      <InfoCell label="Std Dev" value={gs.std_error?.toFixed(2) ?? "N/A"} />
+                      <InfoCell label="Quality" value={gs.quality_used?.toString() ?? "N/A"} />
+                    </>
+                  );
+                })()}
+              </div>
+              {(() => {
+                const ga = (report.forensics.ela as Record<string, unknown>)?.grid_analysis as Record<string, number> | undefined;
+                if (!ga || !ga.suspicious_blocks) return null;
+                return (
+                  <p className="text-sm text-amber-400/80 mt-2">
+                    {ga.suspicious_blocks} of {ga.total_blocks} blocks show anomalous error levels
+                  </p>
+                );
+              })()}
+            </div>
+          )}
+
+          {/* Statistics */}
+          {report.forensics.statistics && Object.keys(report.forensics.statistics).length > 0 && (
+            <div>
+              <h4 className="text-xs text-slate-500 uppercase tracking-wider mb-2">Image Statistics</h4>
+              <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+                {(() => {
+                  const stats = report.forensics.statistics as Record<string, unknown>;
+                  return (
+                    <>
+                      <InfoCell label="Noise Level" value={(stats.noise_level as number)?.toFixed(3) ?? "N/A"} />
+                      <InfoCell label="Laplacian Var" value={(stats.laplacian_variance as number)?.toFixed(2) ?? "N/A"} />
+                      {(() => {
+                        const sat = stats.saturation as Record<string, number> | undefined;
+                        if (!sat) return null;
+                        return <InfoCell label="Avg Saturation" value={sat.mean?.toFixed(4) ?? "N/A"} />;
+                      })()}
+                    </>
+                  );
+                })()}
+              </div>
+            </div>
+          )}
+
+          {/* PRNU / Sensor Noise */}
+          {report.forensics.noise && Object.keys(report.forensics.noise).length > 0 && (
+            <div>
+              <h4 className="text-xs text-slate-500 uppercase tracking-wider mb-2">Sensor Noise (PRNU)</h4>
+              <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+                {(() => {
+                  const ns = (report.forensics.noise as Record<string, unknown>)?.noise_stats as Record<string, unknown> | undefined;
+                  if (!ns) return null;
+                  return (
+                    <>
+                      <InfoCell label="Noise Variance" value={(ns.variance as number)?.toFixed(4) ?? "N/A"} />
+                      <InfoCell label="Kurtosis" value={(ns.kurtosis as number)?.toFixed(4) ?? "N/A"} />
+                      <InfoCell label="Skewness" value={(ns.skewness as number)?.toFixed(4) ?? "N/A"} />
+                    </>
+                  );
+                })()}
+                {(() => {
+                  const cc = (report.forensics.noise as Record<string, unknown>)?.cross_channel as Record<string, unknown> | undefined;
+                  if (!cc) return null;
+                  return (
+                    <>
+                      <InfoCell label="Max Ch. Corr." value={(cc.max_correlation as number)?.toFixed(4) ?? "N/A"} />
+                      <InfoCell label="Most Corr. Pair" value={(cc.most_correlated_pair as string) ?? "N/A"} />
+                    </>
+                  );
+                })()}
+              </div>
+            </div>
+          )}
+
+          {/* Copy-Move */}
+          {report.forensics.copy_move && Object.keys(report.forensics.copy_move).length > 0 && (
+            <div>
+              <h4 className="text-xs text-slate-500 uppercase tracking-wider mb-2">Copy-Move Forgery Detection</h4>
+              {(() => {
+                const cm = report.forensics.copy_move as Record<string, unknown>;
+                const total = cm.total_matches as number;
+                return (
+                  <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+                    <InfoCell label="DCT Matches" value={(cm.dct_matches as number)?.toString() ?? "0"} />
+                    <InfoCell label="Keypoint Matches" value={(cm.keypoint_matches as number)?.toString() ?? "0"} />
+                    <InfoCell label="Total Matches" value={total?.toString() ?? "0"} />
+                  </div>
+                );
+              })()}
+            </div>
+          )}
+
+          {/* CFA / Resampling */}
+          {report.forensics.resampling && Object.keys(report.forensics.resampling).length > 0 && (
+            <div>
+              <h4 className="text-xs text-slate-500 uppercase tracking-wider mb-2">CFA & Resampling Analysis</h4>
+              {(() => {
+                const rs = report.forensics.resampling as Record<string, unknown>;
+                const cfa = rs.cfa as Record<string, unknown> | undefined;
+                const resamp = rs.resampling as Record<string, unknown> | undefined;
+                return (
+                  <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+                    {cfa && (
+                      <>
+                        <InfoCell label="CFA Score" value={(cfa.cfa_score as number)?.toFixed(4) ?? "N/A"} />
+                        <InfoCell label="Pattern" value={(cfa.dominant_pattern as string) ?? "N/A"} />
+                      </>
+                    )}
+                    {resamp && (
+                      <>
+                        <StatusRow
+                          label="Resampling"
+                          value={(resamp.resampling_detected as boolean) ? "Detected" : "Not detected"}
+                          positive={!(resamp.resampling_detected as boolean)}
+                        />
+                        {(resamp.resampling_detected as boolean) && (
+                          <InfoCell label="Period" value={`${(resamp.period as number)?.toFixed(2) ?? "?"}px`} />
+                        )}
+                      </>
+                    )}
+                  </div>
+                );
+              })()}
+            </div>
+          )}
+
+          {(!report.forensics.ela || Object.keys(report.forensics.ela).length === 0) &&
+           (!report.forensics.statistics || Object.keys(report.forensics.statistics).length === 0) &&
+           (!report.forensics.noise || Object.keys(report.forensics.noise).length === 0) &&
+           (!report.forensics.copy_move || Object.keys(report.forensics.copy_move).length === 0) &&
+           (!report.forensics.resampling || Object.keys(report.forensics.resampling).length === 0) && (
+            <p className="text-sm text-slate-500">No forensic analysis data available</p>
+          )}
+        </div>
       </Section>
 
       {/* Evidence Timeline */}

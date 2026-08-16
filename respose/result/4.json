@@ -1,0 +1,137 @@
+{
+  "analysis_id": "73700954-f39b-43a3-94a8-abfea1f8f23f",
+  "classification": "likely_original",
+  "overall_confidence": 0.75,
+  "image_info": {
+    "sha256": "3dfb4a5a527963e30b146ba4036a05f0ea41543cf1843be4980044b20ff68b80",
+    "file_size": 3235357,
+    "mime_type": "image/jpeg",
+    "format": "MPO",
+    "width": 4032,
+    "height": 3024,
+    "bit_depth": 24,
+    "color_mode": "RGB",
+    "color_profile": "present",
+    "compression_info": {},
+    "perceptual_hashes": [
+      {
+        "hash_algorithm": "average_hash",
+        "hash_value": "f3fdcdc7c088e1e0"
+      },
+      {
+        "hash_algorithm": "phash",
+        "hash_value": "fb98c70834a7486f"
+      },
+      {
+        "hash_algorithm": "dhash",
+        "hash_value": "87292b1e1cbb4b0d"
+      },
+      {
+        "hash_algorithm": "whash",
+        "hash_value": "f3fdc1cfc088e0e0"
+      }
+    ]
+  },
+  "provenance": {
+    "c2pa": {
+      "present": false,
+      "valid": null,
+      "trusted": null,
+      "signer": null,
+      "claim_generator": null,
+      "actions": [],
+      "ingredients": [],
+      "validation_errors": [],
+      "trust_signals": []
+    },
+    "metadata": {
+      "camera": [
+        {
+          "lens": "iPhone 16 back dual wide camera 5.96mm f/1.6",
+          "make": "Apple",
+          "type": "camera_info",
+          "model": "iPhone 16",
+          "category": "camera"
+        },
+        {
+          "type": "exposure_settings",
+          "category": "camera",
+          "EXIF FNumber": "8/5",
+          "EXIF FocalLength": "6249513/1048576",
+          "EXIF ExposureTime": "1/222",
+          "EXIF MeteringMode": "Pattern",
+          "EXIF ExposureProgram": "Program Normal",
+          "EXIF ISOSpeedRatings": "40"
+        }
+      ],
+      "software": [
+        {
+          "type": "exif_software",
+          "category": "software",
+          "software_tag": "26.5.2"
+        },
+        {
+          "type": "pil_software",
+          "category": "software",
+          "software_tag": "26.5.2"
+        }
+      ],
+      "timestamps": [
+        {
+          "type": "exif_timestamps",
+          "category": "timestamps",
+          "Image DateTime": "2026:07:31 11:31:11",
+          "EXIF DateTimeOriginal": "2026:07:31 11:31:11",
+          "EXIF DateTimeDigitized": "2026:07:31 11:31:11"
+        }
+      ],
+      "location": [
+        {
+          "type": "gps_present",
+          "category": "location",
+          "description": "GPS coordinates found in EXIF (not displayed for privacy)"
+        }
+      ],
+      "image": [
+        {
+          "type": "orientation",
+          "value": "Rotated 90 CW",
+          "category": "image"
+        }
+      ]
+    },
+    "watermarks": []
+  },
+  "forensics": {
+    "compression": {},
+    "noise": {},
+    "resampling": {},
+    "copy_move": {},
+    "statistics": {}
+  },
+  "ml": {
+    "ai_generated": null,
+    "ai_edited": null,
+    "conventional_edit": null,
+    "provider_prediction": null,
+    "provider_confidence": null,
+    "model_name": null,
+    "model_version": null,
+    "status": "not_implemented"
+  },
+  "regions": [],
+  "evidence_chain": [
+    {
+      "source": "metadata",
+      "category": "camera_signature",
+      "description": "Camera: Apple iPhone 16",
+      "confidence": 0.85,
+      "supports": "likely_original"
+    }
+  ],
+  "limitations": [
+    "ML-based AI detection is not yet implemented. Classification is based on metadata and provenance signals only.",
+    "No cryptographically verified provenance (C2PA) was found. Classification is based on heuristic evidence.",
+    "No AI watermark detection was performed. Watermark analyzers are not yet implemented."
+  ]
+}

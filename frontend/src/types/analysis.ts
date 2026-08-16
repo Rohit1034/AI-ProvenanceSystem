@@ -85,6 +85,7 @@ export interface ProvenanceSection {
 
 export interface ForensicsSection {
   compression: Record<string, unknown>;
+  ela: Record<string, unknown>;
   noise: Record<string, unknown>;
   resampling: Record<string, unknown>;
   copy_move: Record<string, unknown>;

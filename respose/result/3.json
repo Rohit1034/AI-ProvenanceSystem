@@ -1,0 +1,138 @@
+{
+  "analysis_id": "d3814029-68fa-442a-a6b9-12d1be380556",
+  "classification": "conventionally_edited",
+  "overall_confidence": 0.6,
+  "image_info": {
+    "sha256": "0452153d819110dc1ff1e987c2a70616fabdd1cdf09306cd1343ed51d19c0b65",
+    "file_size": 649923,
+    "mime_type": "image/jpeg",
+    "format": "JPEG",
+    "width": 1756,
+    "height": 1242,
+    "bit_depth": 24,
+    "color_mode": "RGB",
+    "color_profile": null,
+    "compression_info": {
+      "has_exif": false,
+      "has_jfif": true,
+      "dqt_count": 2,
+      "quantization_tables": [
+        {
+          "table_id": 0,
+          "precision": 0,
+          "values_summary": {
+            "max": 1,
+            "min": 1,
+            "mean": 1
+          }
+        },
+        {
+          "table_id": 1,
+          "precision": 0,
+          "values_summary": {
+            "max": 1,
+            "min": 1,
+            "mean": 1
+          }
+        }
+      ]
+    },
+    "perceptual_hashes": [
+      {
+        "hash_algorithm": "average_hash",
+        "hash_value": "f7e70000830f0fff"
+      },
+      {
+        "hash_algorithm": "phash",
+        "hash_value": "be639091f609cccd"
+      },
+      {
+        "hash_algorithm": "dhash",
+        "hash_value": "0c0f630f2f5b5b2d"
+      },
+      {
+        "hash_algorithm": "whash",
+        "hash_value": "ffc70000870b0fff"
+      }
+    ]
+  },
+  "provenance": {
+    "c2pa": {
+      "present": false,
+      "valid": null,
+      "trusted": null,
+      "signer": null,
+      "claim_generator": null,
+      "actions": [],
+      "ingredients": [],
+      "validation_errors": [],
+      "trust_signals": []
+    },
+    "metadata": {
+      "exif": [
+        {
+          "type": "no_exif",
+          "category": "exif",
+          "description": "No EXIF data found"
+        }
+      ]
+    },
+    "watermarks": []
+  },
+  "forensics": {
+    "compression": {
+      "has_exif": false,
+      "has_jfif": true,
+      "dqt_count": 2,
+      "quantization_tables": [
+        {
+          "table_id": 0,
+          "precision": 0,
+          "values_summary": {
+            "max": 1,
+            "min": 1,
+            "mean": 1
+          }
+        },
+        {
+          "table_id": 1,
+          "precision": 0,
+          "values_summary": {
+            "max": 1,
+            "min": 1,
+            "mean": 1
+          }
+        }
+      ]
+    },
+    "noise": {},
+    "resampling": {},
+    "copy_move": {},
+    "statistics": {}
+  },
+  "ml": {
+    "ai_generated": null,
+    "ai_edited": null,
+    "conventional_edit": null,
+    "provider_prediction": null,
+    "provider_confidence": null,
+    "model_name": null,
+    "model_version": null,
+    "status": "not_implemented"
+  },
+  "regions": [],
+  "evidence_chain": [
+    {
+      "source": "format_analysis",
+      "category": "compression",
+      "description": "Double JPEG compression indicators detected",
+      "confidence": 0.7,
+      "supports": "conventionally_edited"
+    }
+  ],
+  "limitations": [
+    "ML-based AI detection is not yet implemented. Classification is based on metadata and provenance signals only.",
+    "No cryptographically verified provenance (C2PA) was found. Classification is based on heuristic evidence.",
+    "No AI watermark detection was performed. Watermark analyzers are not yet implemented."
+  ]
+}

@@ -136,6 +136,15 @@ class AnalysisService:
             metadata_result=evidence_map.get("metadata_extractor"),
             c2pa_result=evidence_map.get("c2pa_analyzer"),
             format_result=evidence_map.get("format_analyzer"),
+            ela_result=evidence_map.get("ela_analyzer"),
+            statistics_result=evidence_map.get("statistics_analyzer"),
+            prnu_result=evidence_map.get("prnu_analyzer"),
+            copy_move_result=evidence_map.get("copy_move_detector"),
+            cfa_result=evidence_map.get("cfa_analyzer"),
+            synthid_result=evidence_map.get("synthid_detector"),
+            invisible_watermark_result=evidence_map.get("invisible_watermark_detector"),
+            fft_result=evidence_map.get("fft_spectrum_analyzer"),
+            ai_classifier_result=evidence_map.get("ai_classifier"),
         )
         fusion_output = self.fusion.fuse(fusion_input)
 
@@ -240,5 +249,14 @@ class AnalysisService:
             metadata_result=evidence_map.get("metadata_extractor"),
             c2pa_result=evidence_map.get("c2pa_analyzer"),
             format_result=evidence_map.get("format_analyzer"),
+            ela_result=evidence_map.get("ela_analyzer"),
+            statistics_result=evidence_map.get("statistics_analyzer"),
+            prnu_result=evidence_map.get("prnu_analyzer"),
+            copy_move_result=evidence_map.get("copy_move_detector"),
+            cfa_result=evidence_map.get("cfa_analyzer"),
+            synthid_result=evidence_map.get("synthid_detector"),
+            invisible_watermark_result=evidence_map.get("invisible_watermark_detector"),
+            fft_result=evidence_map.get("fft_spectrum_analyzer"),
+            ai_classifier_result=evidence_map.get("ai_classifier"),
         )
         return self.fusion.fuse(fusion_input)

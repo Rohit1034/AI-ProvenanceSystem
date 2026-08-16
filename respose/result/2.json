@@ -1,0 +1,165 @@
+{
+  "analysis_id": "e81f3b99-1e6c-4345-9c81-1e1dc8932069",
+  "classification": "conventionally_edited",
+  "overall_confidence": 0.65,
+  "image_info": {
+    "sha256": "c4cf123e8720d18f9bc565bd1fe7704ce6955c29e9c2269637aa3be86b9c3d01",
+    "file_size": 1607808,
+    "mime_type": "image/jpeg",
+    "format": "JPEG",
+    "width": 3798,
+    "height": 4112,
+    "bit_depth": 24,
+    "color_mode": "RGB",
+    "color_profile": null,
+    "compression_info": {
+      "has_exif": true,
+      "has_jfif": true,
+      "dqt_count": 2,
+      "quantization_tables": [
+        {
+          "table_id": 0,
+          "precision": 0,
+          "values_summary": {
+            "max": 24,
+            "min": 2,
+            "mean": 11.5
+          }
+        },
+        {
+          "table_id": 1,
+          "precision": 0,
+          "values_summary": {
+            "max": 20,
+            "min": 3,
+            "mean": 17.34375
+          }
+        }
+      ]
+    },
+    "perceptual_hashes": [
+      {
+        "hash_algorithm": "average_hash",
+        "hash_value": "00001800307cfefe"
+      },
+      {
+        "hash_algorithm": "phash",
+        "hash_value": "c42fb4476fa8c28e"
+      },
+      {
+        "hash_algorithm": "dhash",
+        "hash_value": "661631a3e3c4b4ac"
+      },
+      {
+        "hash_algorithm": "whash",
+        "hash_value": "00023d30787cfffe"
+      }
+    ]
+  },
+  "provenance": {
+    "c2pa": {
+      "present": false,
+      "valid": null,
+      "trusted": null,
+      "signer": null,
+      "claim_generator": null,
+      "actions": [],
+      "ingredients": [],
+      "validation_errors": [],
+      "trust_signals": []
+    },
+    "metadata": {
+      "camera": [
+        {
+          "lens": "RF85mm F2 MACRO IS STM",
+          "make": "Canon",
+          "type": "camera_info",
+          "model": "Canon EOS R",
+          "category": "camera"
+        },
+        {
+          "type": "exposure_settings",
+          "category": "camera",
+          "EXIF FNumber": "16/5",
+          "EXIF FocalLength": "85",
+          "EXIF ExposureTime": "1/200",
+          "EXIF MeteringMode": "Pattern",
+          "EXIF ExposureProgram": "Manual",
+          "EXIF ISOSpeedRatings": "500"
+        }
+      ],
+      "timestamps": [
+        {
+          "type": "exif_timestamps",
+          "category": "timestamps",
+          "EXIF DateTimeOriginal": "2025:09:10 13:08:17",
+          "EXIF DateTimeDigitized": "2025:09:10 13:08:17"
+        }
+      ]
+    },
+    "watermarks": []
+  },
+  "forensics": {
+    "compression": {
+      "has_exif": true,
+      "has_jfif": true,
+      "dqt_count": 2,
+      "quantization_tables": [
+        {
+          "table_id": 0,
+          "precision": 0,
+          "values_summary": {
+            "max": 24,
+            "min": 2,
+            "mean": 11.5
+          }
+        },
+        {
+          "table_id": 1,
+          "precision": 0,
+          "values_summary": {
+            "max": 20,
+            "min": 3,
+            "mean": 17.34375
+          }
+        }
+      ]
+    },
+    "noise": {},
+    "resampling": {},
+    "copy_move": {},
+    "statistics": {}
+  },
+  "ml": {
+    "ai_generated": null,
+    "ai_edited": null,
+    "conventional_edit": null,
+    "provider_prediction": null,
+    "provider_confidence": null,
+    "model_name": null,
+    "model_version": null,
+    "status": "not_implemented"
+  },
+  "regions": [],
+  "evidence_chain": [
+    {
+      "source": "metadata",
+      "category": "camera_signature",
+      "description": "Camera: Canon Canon EOS R",
+      "confidence": 0.85,
+      "supports": "likely_original"
+    },
+    {
+      "source": "format_analysis",
+      "category": "compression",
+      "description": "Double JPEG compression indicators detected",
+      "confidence": 0.7,
+      "supports": "conventionally_edited"
+    }
+  ],
+  "limitations": [
+    "ML-based AI detection is not yet implemented. Classification is based on metadata and provenance signals only.",
+    "No cryptographically verified provenance (C2PA) was found. Classification is based on heuristic evidence.",
+    "No AI watermark detection was performed. Watermark analyzers are not yet implemented."
+  ]
+}
