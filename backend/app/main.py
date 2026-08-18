@@ -1,13 +1,30 @@
-from __future__ import annotations
-
+import asyncio
+import logging
 from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
 
 from backend.app.core.config import get_settings
 from backend.app.core.logging import setup_logging
 from backend.app.api.routes import router as api_router
+
+logger = logging.getLogger("provenance.main")
+
+
+async def _keep_alive_loop(url: str, interval: int):
+    """Periodically ping a URL to keep free-tier instances from idling."""
+    await asyncio.sleep(10)
+    import httpx
+    async with httpx.AsyncClient(timeout=10) as client:
+        while True:
+            try:
+                r = await client.get(url)
+                logger.info("Keep-alive ping sent to %s (status: %d)", url, r.status_code)
+            except Exception as e:
+                logger.debug("Keep-alive ping error: %s", e)
+            await asyncio.sleep(interval)
 
 
 @asynccontextmanager
@@ -19,7 +36,16 @@ async def lifespan(app: FastAPI):
     async with engine.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)
 
+    keep_alive_task = None
+    if settings.KEEP_ALIVE_URL:
+        keep_alive_task = asyncio.create_task(
+            _keep_alive_loop(settings.KEEP_ALIVE_URL, settings.KEEP_ALIVE_INTERVAL_SECONDS)
+        )
+
     yield
+
+    if keep_alive_task:
+        keep_alive_task.cancel()
 
     from backend.app.core.database import engine
     await engine.dispose()
@@ -38,11 +64,26 @@ def create_app() -> FastAPI:
 
     app.add_middleware(
         CORSMiddleware,
-        allow_origins=settings.CORS_ORIGINS,
+        allow_origins=settings.CORS_ORIGINS if settings.CORS_ORIGINS else ["*"],
         allow_credentials=True,
         allow_methods=["*"],
         allow_headers=["*"],
     )
+
+    @app.get("/", include_in_schema=False)
+    async def root():
+        return JSONResponse({
+            "service": settings.PROJECT_NAME,
+            "version": settings.VERSION,
+            "status": "online",
+            "docs": "/docs",
+            "health": "/healthz",
+            "api": f"{settings.API_V1_PREFIX}/analyze",
+        })
+
+    @app.get("/healthz", include_in_schema=False)
+    async def healthz():
+        return JSONResponse({"status": "healthy", "service": settings.PROJECT_NAME})
 
     app.include_router(api_router, prefix=settings.API_V1_PREFIX)
 

@@ -50,6 +50,33 @@ class Settings(BaseSettings):
 
     RETENTION_HOURS: int = 24
 
+    KEEP_ALIVE_URL: str = ""
+    KEEP_ALIVE_INTERVAL_SECONDS: int = 600
+
+    @field_validator("DATABASE_URL", mode="before")
+    @classmethod
+    def normalize_database_url(cls, v: str) -> str:
+        if isinstance(v, str):
+            if v.startswith("postgres://"):
+                return v.replace("postgres://", "postgresql+asyncpg://", 1)
+            elif v.startswith("postgresql://") and not v.startswith("postgresql+asyncpg://"):
+                return v.replace("postgresql://", "postgresql+asyncpg://", 1)
+        return v
+
+    @field_validator("CORS_ORIGINS", mode="before")
+    @classmethod
+    def parse_cors_origins(cls, v: Any) -> list[str]:
+        if isinstance(v, str):
+            import json
+            try:
+                parsed = json.loads(v)
+                if isinstance(parsed, list):
+                    return parsed
+            except Exception:
+                pass
+            return [x.strip() for x in v.split(",") if x.strip()]
+        return v
+
     @field_validator("STORAGE_LOCAL_PATH", "TEMP_DIR")
     @classmethod
     def ensure_path_exists(cls, v: str) -> str:
