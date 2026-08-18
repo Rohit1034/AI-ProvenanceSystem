@@ -4,6 +4,7 @@ import os
 from pathlib import Path
 from functools import lru_cache
 
+from typing import Any
 from pydantic_settings import BaseSettings
 from pydantic import field_validator
 
@@ -46,7 +47,7 @@ class Settings(BaseSettings):
     LOG_LEVEL: str = "INFO"
     LOG_FORMAT: str = "json"
 
-    CORS_ORIGINS: list[str] = ["http://localhost:5173", "http://localhost:3000"]
+    CORS_ORIGINS: Any = ["http://localhost:5173", "http://localhost:3000"]
 
     RETENTION_HOURS: int = 24
 
@@ -66,16 +67,23 @@ class Settings(BaseSettings):
     @field_validator("CORS_ORIGINS", mode="before")
     @classmethod
     def parse_cors_origins(cls, v: Any) -> list[str]:
+        if isinstance(v, list):
+            return [str(x) for x in v]
         if isinstance(v, str):
+            v_clean = v.strip().strip("'\"")
+            if v_clean in ("*", ""):
+                return ["*"]
             import json
             try:
-                parsed = json.loads(v)
+                parsed = json.loads(v_clean)
                 if isinstance(parsed, list):
-                    return parsed
+                    return [str(x) for x in parsed]
             except Exception:
                 pass
-            return [x.strip() for x in v.split(",") if x.strip()]
-        return v
+            if "," in v_clean:
+                return [x.strip().strip("'\"") for x in v_clean.split(",") if x.strip()]
+            return [v_clean]
+        return ["*"]
 
     @field_validator("STORAGE_LOCAL_PATH", "TEMP_DIR")
     @classmethod
