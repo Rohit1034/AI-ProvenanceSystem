@@ -62,12 +62,17 @@ def create_app() -> FastAPI:
         redoc_url="/redoc",
     )
 
+    origins = settings.CORS_ORIGINS if settings.CORS_ORIGINS else ["*"]
+    is_wildcard = "*" in origins
+
     app.add_middleware(
         CORSMiddleware,
-        allow_origins=settings.CORS_ORIGINS if settings.CORS_ORIGINS else ["*"],
-        allow_credentials=True,
+        allow_origins=origins if not is_wildcard else ["*"],
+        allow_origin_regex=r"https://.*\.vercel\.app|https://.*\.onrender\.com|http://localhost:.*" if is_wildcard else None,
+        allow_credentials=not is_wildcard,
         allow_methods=["*"],
         allow_headers=["*"],
+        expose_headers=["*"],
     )
 
     @app.get("/", include_in_schema=False)
